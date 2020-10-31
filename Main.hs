@@ -20,6 +20,48 @@ newtype Item = Item { unItem :: Text }
     deriving stock Show
     deriving newtype (FromField, ToField)
 
+{-
+
+Entity Component System
+
+Components: Things an item (entity) can have or be
+
+ * due date
+ * occurrence(s)
+ * email identifier
+ * box-of-stuff-style links to other items
+ * relative importance
+ * location on a list
+ * summary
+ * long description
+ * content
+ * file attachments
+ * title
+ * snooze timer (e.g. to implement tickler)
+ * owner/author
+ * recipient and other email headers
+ * spaced repitition attributes
+
+Types of items (implemented structurally by having or not having the above components):
+
+ * Project
+ * Task
+ * Goal
+ * Meeting
+ * Invitation
+ * Topic for thinking/writing about
+ * GTD "task context"
+ * Email
+
+Structure for items
+
+ * Archive
+ * Reference
+ * To-do lists
+ * Thinking/Reading lists
+
+-}
+
 item1 = Item "Make a basic model for Orgr"
 
 data Views
