@@ -16,6 +16,7 @@ let
       nix-linter.enable = true;
       fourmolu.enable = true;
       hlint.enable = true;
+      cabal-fmt.enable = true;
     };
   };
 
