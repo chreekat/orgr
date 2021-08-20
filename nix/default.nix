@@ -10,6 +10,7 @@ let
   pre-commit-hooks = (import sources."pre-commit-hooks.nix");
   pre-commit-check = pre-commit-hooks.run {
     src = gitignoreSource ../.;
+    default_stages = [];
     hooks = {
       shellcheck.enable = true;
       nixpkgs-fmt.enable = true;
