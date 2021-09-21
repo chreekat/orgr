@@ -3,18 +3,23 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+
+module Orgr where
 
 import Prelude hiding (putStr, putStrLn, getLine, unlines)
 
 import Control.Exception.Safe
 import Control.Monad (forever)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Database.SQLite.Simple
-import Database.SQLite.Simple.ToField
-import Database.SQLite.Simple.FromField
-import GHC.Stack
+import Control.Lens
 import Data.Text (Text, unlines)
 import Data.Text.IO (putStr, putStrLn, getLine)
+import Database.SQLite.Simple
+import Database.SQLite.Simple.FromField
+import Database.SQLite.Simple.ToField
+import GHC.Stack
+import Monomer
 
 newtype Item = Item { unItem :: Text }
     deriving stock Show
@@ -62,8 +67,6 @@ Structure for items
 
 -}
 
-item1 = Item "Make a basic model for Orgr"
-
 data Views
     = CaptureIn
     | ReviewIn
@@ -72,8 +75,8 @@ data Views
 newtype Orgr a = Orgr { runOrgr :: IO a }
     deriving newtype (Functor, Applicative, Monad, MonadIO)
 
-main :: HasCallStack => IO ()
-main = forever $ do
+main1 :: IO ()
+main1 = forever $ do
     -- Set up a db
     conn <- open "test.db"
     execute_ conn "create table if not exists inbox (id integer primary key, item text)"
@@ -85,3 +88,56 @@ main = forever $ do
         putStr "IN> "
         getLine
     execute conn "insert into inbox (item) values (?)" (Only item)
+
+
+{-
+
+Actions - how to handle Inbox items.
+
+Step 0: make processing notes - a scratchpad for brainstorming before taking
+action.
+
+Step 1: take action:
+
+- Create a goal (schedule - dod - importance)
+- Create a task (dod - importance - urgency)
+- Archive/reference it
+- Schedule a calendar event
+- Schedule a reminder aka snooze it aka tickle it
+
+
+-}
+
+data ShowInboxModel = ShowInboxModel
+    deriving (Eq, Show)
+
+makeLenses 'ShowInboxModel
+
+data AppEvent = AppEvent
+
+type TopApp a = a ShowInboxModel AppEvent
+
+handler
+    :: TopApp WidgetEnv
+    -> TopApp WidgetNode
+    -> ShowInboxModel
+    -> AppEvent
+    -- For some reason, [TopApp AppEventResponse] results in "The type synonym
+    -- AppEventResponse should have 2 arguments, but has been given none".
+    -> [AppEventResponse ShowInboxModel AppEvent]
+handler _ _ _ _ = []
+buildUI _ _ = box_ [alignCenter, alignMiddle] (vstack [label "Hello world"])
+main = showInbox
+showInbox = do
+    -- Set up a db
+    conn <- open "test.db"
+    execute_ conn "create table if not exists inbox (id integer primary key, item text)"
+    items <- query_ conn "select item from inbox" :: IO [Only Item]
+    startApp ShowInboxModel handler buildUI config
+    where
+    config =
+        -- FIXME: use Cabal paths
+        [ appFontDef "Regular" "./assets/fonts/Roboto-Regular.ttf"
+        , appWindowTitle "Hello world"
+        , appTheme darkTheme
+        ]
