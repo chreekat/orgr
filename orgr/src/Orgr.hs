@@ -1,28 +1,28 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Orgr where
 
-import Prelude hiding (putStr, putStrLn, getLine, unlines)
+import Prelude hiding (getLine, putStr, putStrLn, unlines)
 
 import Control.Exception.Safe
+import Control.Lens
 import Control.Monad (forever)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Lens
 import Data.Text (Text, unlines)
-import Data.Text.IO (putStr, putStrLn, getLine)
+import Data.Text.IO (getLine, putStr, putStrLn)
 import Database.SQLite.Simple
 import Database.SQLite.Simple.FromField
 import Database.SQLite.Simple.ToField
 import GHC.Stack
 import Monomer
 
-newtype Item = Item { unItem :: Text }
-    deriving stock Show
+newtype Item = Item {unItem :: Text}
+    deriving stock (Show)
     deriving newtype (FromField, ToField)
 
 {-
@@ -71,8 +71,7 @@ data Views
     = CaptureIn
     | ReviewIn
 
-
-newtype Orgr a = Orgr { runOrgr :: IO a }
+newtype Orgr a = Orgr {runOrgr :: IO a}
     deriving newtype (Functor, Applicative, Monad, MonadIO)
 
 main1 :: IO ()
@@ -84,11 +83,11 @@ main1 = forever $ do
     putStrLn "######## ITEMS ###########"
     putStrLn (unlines (map (unItem . fromOnly) items))
     putStrLn "##########################"
-    item <- fmap Item $ liftIO $ do
-        putStr "IN> "
-        getLine
+    item <- fmap Item $
+        liftIO $ do
+            putStr "IN> "
+            getLine
     execute conn "insert into inbox (item) values (?)" (Only item)
-
 
 {-
 
@@ -105,7 +104,6 @@ Step 1: take action:
 - Schedule a calendar event
 - Schedule a reminder aka snooze it aka tickle it
 
-
 -}
 
 data ShowInboxModel = ShowInboxModel
@@ -117,14 +115,14 @@ data AppEvent = AppEvent
 
 type TopApp a = a ShowInboxModel AppEvent
 
-handler
-    :: TopApp WidgetEnv
-    -> TopApp WidgetNode
-    -> ShowInboxModel
-    -> AppEvent
+handler ::
+    TopApp WidgetEnv ->
+    TopApp WidgetNode ->
+    ShowInboxModel ->
+    AppEvent ->
     -- For some reason, [TopApp AppEventResponse] results in "The type synonym
     -- AppEventResponse should have 2 arguments, but has been given none".
-    -> [AppEventResponse ShowInboxModel AppEvent]
+    [AppEventResponse ShowInboxModel AppEvent]
 handler _ _ _ _ = []
 buildUI _ _ = box_ [alignCenter, alignMiddle] (vstack [label "Hello world"])
 main = showInbox
@@ -134,7 +132,7 @@ showInbox = do
     execute_ conn "create table if not exists inbox (id integer primary key, item text)"
     items <- query_ conn "select item from inbox" :: IO [Only Item]
     startApp ShowInboxModel handler buildUI config
-    where
+  where
     config =
         -- FIXME: use Cabal paths
         [ appFontDef "Regular" "./assets/fonts/Roboto-Regular.ttf"
