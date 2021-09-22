@@ -22,7 +22,7 @@ import GHC.Stack
 import Monomer
 
 newtype Item = Item {unItem :: Text}
-    deriving stock (Show)
+    deriving stock (Show, Eq)
     deriving newtype (FromField, ToField)
 
 {-
@@ -106,7 +106,7 @@ Step 1: take action:
 
 -}
 
-data ShowInboxModel = ShowInboxModel
+newtype ShowInboxModel = ShowInboxModel [Item]
     deriving (Eq, Show)
 
 makeLenses 'ShowInboxModel
@@ -124,14 +124,15 @@ handler ::
     -- AppEventResponse should have 2 arguments, but has been given none".
     [AppEventResponse ShowInboxModel AppEvent]
 handler _ _ _ _ = []
-buildUI _ _ = box_ [alignCenter, alignMiddle] (vstack [label "Hello world"])
+buildUI _ (ShowInboxModel is) = box_ [alignCenter, alignMiddle] (vstack [label (unItem (head is))])
 main = showInbox
 showInbox = do
     -- Set up a db
     conn <- open "test.db"
     execute_ conn "create table if not exists inbox (id integer primary key, item text)"
-    items <- query_ conn "select item from inbox" :: IO [Only Item]
-    startApp ShowInboxModel handler buildUI config
+    items <- fmap fromOnly <$> query_ conn "select item from inbox"
+    print items
+    startApp (ShowInboxModel items) handler buildUI config
   where
     config =
         -- FIXME: use Cabal paths
