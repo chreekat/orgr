@@ -33,6 +33,7 @@ let
     shellHook = ''
       ${pre-commit-check.shellHook}
     '';
+    withHoogle = true;
   };
 
 in
