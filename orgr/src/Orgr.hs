@@ -46,6 +46,7 @@ Components: Things an item (entity) can have or be
  * owner/author
  * recipient and other email headers
  * spaced repitition attributes
+ * next action
 
 Types of items (implemented structurally by having or not having the above components):
 
@@ -64,6 +65,30 @@ Structure for items
  * Reference
  * To-do lists
  * Thinking/Reading lists
+
+-- * Details about types of items.
+
+Goal.
+----
+
+A goal has a description of "done".
+It can be on a task list, in which case it is also an Action Item, and SHOULD have a due date and priority.
+It can be on the projects list, in which case it also a Project (duh), and SHOULD have a due date and (next action or waiting-for)
+It can be tickled.
+It can not be on those lists, in which case it is automatically on the "Someday/Maybe" list.
+
+In terms of converting Inbox Items into Goals, one needs to know:
+
+* Goal description incl. definition of done
+* Is there a due date
+* Is there a priority
+* Should it be tickled
+* Is it a project
+    * What is the next-action (TBD, need to define next-actions) or waiting-for?
+* Does it belong on a task list?
+
+Sometimes an Inbox Item is inspiration for a goal, but isn't the goal itself. In
+that case, the original idea can be discarded or attached as a note.
 
 -}
 
@@ -93,10 +118,12 @@ main1 = forever $ do
 
 Actions - how to handle Inbox items.
 
-Step 0: make processing notes - a scratchpad for brainstorming before taking
+Action 0: Make processing notes - a scratchpad for brainstorming before taking
 action.
 
-Step 1: take action:
+Action 1: Edit it
+
+Action 2: Take action:
 
 - Create a goal (schedule - dod - importance)
 - Create a task (dod - importance - urgency)
