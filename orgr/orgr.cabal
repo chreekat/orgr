@@ -22,7 +22,6 @@ library
   exposed-modules:  Orgr
   build-depends:
     , base             >=4.12 && <4.15
-    , lens             ^>=4.19
     , monomer          ^>=1.0
     , safe-exceptions
     , sqlite-simple

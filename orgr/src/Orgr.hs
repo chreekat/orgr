@@ -1,16 +1,14 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Orgr where
 
 import Prelude hiding (getLine, putStr, putStrLn, unlines)
 
 import Control.Exception.Safe
-import Control.Lens
 import Control.Monad (forever)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text (Text, unlines)
@@ -133,37 +131,48 @@ Action 2: Take action:
 
 -}
 
-newtype ShowInboxModel = ShowInboxModel [Item]
+data EditingProcessedItem = Editing | NotEditing
     deriving (Eq, Show)
 
-makeLenses 'ShowInboxModel
+data ProcessInboxModel = ProcessInboxModel [Item] EditingProcessedItem
+    deriving (Eq, Show)
 
-data AppEvent = AppEvent
-
-type TopApp a = a ShowInboxModel AppEvent
+data AppEvent = Nop | UpdateItem Text
 
 handler ::
     TopApp WidgetEnv ->
     TopApp WidgetNode ->
-    ShowInboxModel ->
+    ProcessInboxModel ->
     AppEvent ->
     -- For some reason, [TopApp AppEventResponse] results in "The type synonym
     -- AppEventResponse should have 2 arguments, but has been given none".
-    [AppEventResponse ShowInboxModel AppEvent]
-handler _ _ _ _ = []
-buildUI _ (ShowInboxModel is) = box_ [alignCenter, alignMiddle] (vstack [label (unItem (head is))])
-main = showInbox
-showInbox = do
+    [AppEventResponse ProcessInboxModel AppEvent]
+handler wenv node model = \case
+    Nop -> []
+    UpdateItem t -> updateItem t model
+
+updateItem t (ProcessInboxModel is s) =
+    pure $ Model $ ProcessInboxModel (Item t : tail is) s
+
+buildProcessInboxUI _ model@(ProcessInboxModel is editing) =
+    let thing = case editing of
+            NotEditing -> label (unItem (head is))
+            Editing -> textFieldV (unItem (head is)) UpdateItem
+     in box_ [alignCenter, alignMiddle] thing
+
+type TopApp a = a ProcessInboxModel AppEvent
+
+main = do
     -- Set up a db
     conn <- open "test.db"
     execute_ conn "create table if not exists inbox (id integer primary key, item text)"
     items <- fmap fromOnly <$> query_ conn "select item from inbox"
-    print items
-    startApp (ShowInboxModel items) handler buildUI config
+    startApp (initial items) handler buildProcessInboxUI config
   where
+    initial is = ProcessInboxModel is Editing
     config =
         -- FIXME: use Cabal paths
         [ appFontDef "Regular" "./assets/fonts/Roboto-Regular.ttf"
-        , appWindowTitle "Hello world"
+        , appWindowTitle "Orgr"
         , appTheme darkTheme
         ]
