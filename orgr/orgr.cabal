@@ -19,7 +19,11 @@ maintainer:    b@chreekat.net
 build-type:    Simple
 
 library
-  exposed-modules:  Orgr
+  exposed-modules:
+    Orgr
+    Orgr.Item
+    Orgr.ProcessIn
+
   build-depends:
     , base             >=4.12 && <4.15
     , monomer          ^>=1.0

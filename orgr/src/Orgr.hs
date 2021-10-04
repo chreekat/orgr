@@ -1,6 +1,4 @@
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -11,17 +9,13 @@ import Prelude hiding (getLine, putStr, putStrLn, unlines)
 import Control.Exception.Safe
 import Control.Monad (forever)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Text (Text, unlines)
+import Data.Text (Text)
 import Data.Text.IO (getLine, putStr, putStrLn)
 import Database.SQLite.Simple
-import Database.SQLite.Simple.FromField
-import Database.SQLite.Simple.ToField
 import GHC.Stack
 import Monomer
 
-newtype Item = Item {unItem :: Text}
-    deriving stock (Show, Eq)
-    deriving newtype (FromField, ToField)
+import Orgr.ProcessIn
 
 {-
 
@@ -89,78 +83,6 @@ Sometimes an Inbox Item is inspiration for a goal, but isn't the goal itself. In
 that case, the original idea can be discarded or attached as a note.
 
 -}
-
-data Views
-    = CaptureIn
-    | ReviewIn
-
-newtype Orgr a = Orgr {runOrgr :: IO a}
-    deriving newtype (Functor, Applicative, Monad, MonadIO)
-
-main1 :: IO ()
-main1 = forever $ do
-    -- Set up a db
-    conn <- open "test.db"
-    execute_ conn "create table if not exists inbox (id integer primary key, item text)"
-    items <- query_ conn "select item from inbox" :: IO [Only Item]
-    putStrLn "######## ITEMS ###########"
-    putStrLn (unlines (map (unItem . fromOnly) items))
-    putStrLn "##########################"
-    item <- fmap Item $
-        liftIO $ do
-            putStr "IN> "
-            getLine
-    execute conn "insert into inbox (item) values (?)" (Only item)
-
-{-
-
-Actions - how to handle Inbox items.
-
-Action 0: Make processing notes - a scratchpad for brainstorming before taking
-action.
-
-Action 1: Edit it
-
-Action 2: Take action:
-
-- Create a goal (schedule - dod - importance)
-- Create a task (dod - importance - urgency)
-- Archive/reference it
-- Schedule a calendar event
-- Schedule a reminder aka snooze it aka tickle it
-
--}
-
-data EditingProcessedItem = Editing | NotEditing
-    deriving (Eq, Show)
-
-data ProcessInboxModel = ProcessInboxModel [Item] EditingProcessedItem
-    deriving (Eq, Show)
-
-data AppEvent = Nop | UpdateItem Text
-
-handler ::
-    TopApp WidgetEnv ->
-    TopApp WidgetNode ->
-    ProcessInboxModel ->
-    AppEvent ->
-    -- For some reason, [TopApp AppEventResponse] results in "The type synonym
-    -- AppEventResponse should have 2 arguments, but has been given none".
-    [AppEventResponse ProcessInboxModel AppEvent]
-handler wenv node model = \case
-    Nop -> []
-    UpdateItem t -> updateItem t model
-
-updateItem t (ProcessInboxModel is s) =
-    pure $ Model $ ProcessInboxModel (Item t : tail is) s
-
-buildProcessInboxUI _ model@(ProcessInboxModel is editing) =
-    let thing = case editing of
-            NotEditing -> label (unItem (head is))
-            Editing -> textFieldV (unItem (head is)) UpdateItem
-     in box_ [alignCenter, alignMiddle] thing
-
-type TopApp a = a ProcessInboxModel AppEvent
 
 main = do
     -- Set up a db
