@@ -15,7 +15,7 @@ import Database.SQLite.Simple
 import GHC.Stack
 import Monomer
 
-import Orgr.ProcessIn
+import qualified Orgr.ProcessIn as ProcessIn
 
 {-
 
@@ -89,9 +89,9 @@ main = do
     conn <- open "test.db"
     execute_ conn "create table if not exists inbox (id integer primary key, item text)"
     items <- fmap fromOnly <$> query_ conn "select item from inbox"
-    startApp (initial items) handler buildProcessInboxUI config
+    startApp (initial items) ProcessIn.handler ProcessIn.buildUI config
   where
-    initial is = ProcessInboxModel is Editing
+    initial is = ProcessIn.Model is ProcessIn.Editing
     config =
         -- FIXME: use Cabal paths
         [ appFontDef "Regular" "./assets/fonts/Roboto-Regular.ttf"

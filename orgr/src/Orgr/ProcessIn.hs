@@ -15,7 +15,8 @@ import Database.SQLite.Simple
 import Database.SQLite.Simple.FromField
 import Database.SQLite.Simple.ToField
 import GHC.Stack
-import Monomer
+import Monomer hiding (Model)
+import qualified Monomer
 
 import Orgr.Item
 
@@ -43,12 +44,12 @@ Action 2: Take action:
 data EditingProcessedItem = Editing | NotEditing
     deriving (Eq, Show)
 
-data ProcessInboxModel = ProcessInboxModel [Item] EditingProcessedItem
+data Model = Model [Item] EditingProcessedItem
     deriving (Eq, Show)
 
 -- View
 
-buildProcessInboxUI _ model@(ProcessInboxModel is editing) =
+buildUI _ model@(Model is editing) =
     let thing = case editing of
             NotEditing -> label (unItem (head is))
             Editing -> textFieldV (unItem (head is)) UpdateItem
@@ -56,21 +57,21 @@ buildProcessInboxUI _ model@(ProcessInboxModel is editing) =
 
 -- Whatever
 
-data AppEvent = Nop | UpdateItem Text
+data Event = Nop | UpdateItem Text
 
-type TopApp a = a ProcessInboxModel AppEvent
+type TopApp a = a Model Event
 
 handler ::
     TopApp WidgetEnv ->
     TopApp WidgetNode ->
-    ProcessInboxModel ->
-    AppEvent ->
+    Model ->
+    Event ->
     -- For some reason, [TopApp AppEventResponse] results in "The type synonym
     -- AppEventResponse should have 2 arguments, but has been given none".
-    [AppEventResponse ProcessInboxModel AppEvent]
+    [AppEventResponse Model Event]
 handler wenv node model = \case
     Nop -> []
     UpdateItem t -> updateItem t model
 
-updateItem t (ProcessInboxModel is s) =
-    pure $ Model $ ProcessInboxModel (Item t : tail is) s
+updateItem t (Model is s) =
+    pure $ Monomer.Model $ Model (Item t : tail is) s
