@@ -78,6 +78,7 @@ buildUI _ model@(Model is editing) =
                 )
      in keystroke_
             (fmap (fmap HandleUser) kmap)
+            -- FIXME: This doesn't do what I expect.
             [ignoreChildrenEvts]
             $ box_ [alignCenter, alignMiddle] thing
 
@@ -100,21 +101,23 @@ handler wenv node model = \case
         | Save <- x ->
             trace
                 "Save"
-                [ Monomer.Model $ model{modelEditMode = NotEditing}
-                , -- TODO: This should be a Report
+                [ Monomer.Model model{modelEditMode = NotEditing}
+                , -- TODO?: This should be a Report, not a Task. Centralize persistence.
                   let (ItemDb id_ i) = head (modelItems model)
                    in Monomer.Task $
                         Nop <$ do
                             traceIO "Writing db"
                             conn <- open "test.db"
+                            -- TODO: centralize SQL statements
                             execute conn "update inbox set item = ? where id = ?" (i, id_)
                             close conn
                 ]
         | Edit <- x ->
             trace
                 "Edit"
-                [ Monomer.Model $ model{modelEditMode = Editing}
-                , setFocusOnKey wenv "edit-box"
+                [ Monomer.Model model{modelEditMode = Editing}
+                , -- FIXME: This doesn't do what I expect.
+                  setFocusOnKey wenv "edit-box"
                 ]
 
 updateItem t (Model is s) =

@@ -29,7 +29,7 @@ let
 
   shell = pkgs.haskellPackages.shellFor {
     packages = p: [ p.orgr ];
-    buildInputs = [ pkgs.cabal-install pkgs.niv ];
+    buildInputs = [ pkgs.cabal-install pkgs.niv pkgs.haskellPackages.fourmolu ];
     shellHook = ''
       ${pre-commit-check.shellHook}
     '';
