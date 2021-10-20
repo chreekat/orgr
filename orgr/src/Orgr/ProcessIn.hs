@@ -1,5 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Orgr.ProcessIn where
@@ -14,6 +15,7 @@ import Data.Text.IO (getLine, putStr, putStrLn)
 import Database.SQLite.Simple
 import Database.SQLite.Simple.FromField
 import Database.SQLite.Simple.ToField
+import Debug.Trace
 import GHC.Stack
 import Monomer hiding (Model)
 import qualified Monomer
@@ -44,20 +46,42 @@ Action 2: Take action:
 data EditingProcessedItem = Editing | NotEditing
     deriving (Eq, Show)
 
-data Model = Model [Item] EditingProcessedItem
+data Model = Model {modelItems :: [ItemDb], modelEditMode :: EditingProcessedItem}
     deriving (Eq, Show)
+
+data UserAction = Edit | Save
+
+-- TODO: Make KeyMap more sophisticated. Modes ala vim, submaps ala emacs. A lot
+-- could be generated from the list of user actions alone if it was more
+-- sophisticated.
+type KeyMap = [(Text, UserAction)]
+
+viewKeymap, editKeymap :: KeyMap
+viewKeymap =
+    [("e", Edit)]
+editKeymap =
+    [("Enter", Save)]
+
+data Event = Nop | UpdateItem Text | HandleUser UserAction
 
 -- View
 
 buildUI _ model@(Model is editing) =
-    let thing = case editing of
-            NotEditing -> label (unItem (head is))
-            Editing -> textFieldV (unItem (head is)) UpdateItem
-     in box_ [alignCenter, alignMiddle] thing
+    let (thing, kmap) = case editing of
+            NotEditing ->
+                ( label (leItem (head is))
+                , viewKeymap
+                )
+            Editing ->
+                ( textFieldV (leItem (head is)) UpdateItem `nodeKey` "edit-box"
+                , editKeymap
+                )
+     in keystroke_
+            (fmap (fmap HandleUser) kmap)
+            [ignoreChildrenEvts]
+            $ box_ [alignCenter, alignMiddle] thing
 
 -- Whatever
-
-data Event = Nop | UpdateItem Text
 
 type TopApp a = a Model Event
 
@@ -72,6 +96,27 @@ handler ::
 handler wenv node model = \case
     Nop -> []
     UpdateItem t -> updateItem t model
+    HandleUser x
+        | Save <- x ->
+            trace
+                "Save"
+                [ Monomer.Model $ model{modelEditMode = NotEditing}
+                , -- TODO: This should be a Report
+                  let (ItemDb id_ i) = head (modelItems model)
+                   in Monomer.Task $
+                        Nop <$ do
+                            traceIO "Writing db"
+                            conn <- open "test.db"
+                            execute conn "update inbox set item = ? where id = ?" (i, id_)
+                            close conn
+                ]
+        | Edit <- x ->
+            trace
+                "Edit"
+                [ Monomer.Model $ model{modelEditMode = Editing}
+                , setFocusOnKey wenv "edit-box"
+                ]
 
 updateItem t (Model is s) =
-    pure $ Monomer.Model $ Model (Item t : tail is) s
+    let ItemDb id_ _ = head is
+     in pure $ Monomer.Model $ Model (ItemDb id_ (Item t) : tail is) s

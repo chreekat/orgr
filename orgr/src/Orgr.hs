@@ -88,10 +88,11 @@ main = do
     -- Set up a db
     conn <- open "test.db"
     execute_ conn "create table if not exists inbox (id integer primary key, item text)"
-    items <- fmap fromOnly <$> query_ conn "select item from inbox"
+    items <- query_ conn "select id, item from inbox"
+    close conn
     startApp (initial items) ProcessIn.handler ProcessIn.buildUI config
   where
-    initial is = ProcessIn.Model is ProcessIn.Editing
+    initial is = ProcessIn.Model is ProcessIn.NotEditing
     config =
         -- FIXME: use Cabal paths
         [ appFontDef "Regular" "./assets/fonts/Roboto-Regular.ttf"
