@@ -42,7 +42,7 @@ data EditingProcessedItem = Editing | NotEditing
 data Model = Model {modelItems :: [ItemDb], modelEditMode :: EditingProcessedItem}
     deriving (Eq, Show)
 
-data UserAction = Edit | Save
+data UserAction = Edit | Save | KastZettel
 
 -- TODO: Make KeyMap more sophisticated. Modes ala vim, submaps ala emacs. A lot
 -- could be generated from the list of user actions alone if it was more
@@ -113,6 +113,7 @@ handler wenv _node model = \case
                 , -- FIXME: This doesn't do what I expect.
                   setFocusOnKey wenv "edit-box"
                 ]
+        | KastZettel <- x -> error "Unimplemented"
 
 updateItem :: Applicative f => Text -> Model -> f (AppEventResponse Model Event)
 updateItem t (Model is s) =
