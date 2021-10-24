@@ -84,7 +84,17 @@ main = do
     -- Set up a db
     conn <- open "test.db"
     execute_ conn "create table if not exists inbox (id integer primary key, item text)"
-    items <- query_ conn "select id, item from inbox"
+    dbitems <- query_ conn "select id, item from inbox"
+    -- FIXME: Ensure there's something there so it's easy to experiement
+    items <- case dbitems of
+        [] -> do
+            -- NOTE: "RETURNING" syntax is from Sqlite 3.35.0
+            execute
+                conn
+                "insert into inbox (item) values (?)"
+                (Only "Todo: work on orgr" :: Only Text)
+            query_ conn "select id, item from inbox"
+        _ -> pure dbitems
     close conn
     startApp (initial items) ProcessIn.handler ProcessIn.buildUI config
   where
