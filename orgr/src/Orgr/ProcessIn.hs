@@ -7,16 +7,9 @@ module Orgr.ProcessIn where
 
 import Prelude hiding (getLine, putStr, putStrLn, unlines)
 
-import Control.Exception.Safe
-import Control.Monad (forever)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Text (Text, unlines)
-import Data.Text.IO (getLine, putStr, putStrLn)
+import Data.Text (Text)
 import Database.SQLite.Simple
-import Database.SQLite.Simple.FromField
-import Database.SQLite.Simple.ToField
 import Debug.Trace
-import GHC.Stack
 import Monomer hiding (Model)
 import qualified Monomer
 
@@ -66,7 +59,8 @@ data Event = Nop | UpdateItem Text | HandleUser UserAction
 
 -- View
 
-buildUI _ model@(Model is editing) =
+buildUI :: WidgetEnv Model Event -> Model -> WidgetNode Model Event
+buildUI _ _model@(Model is editing) =
     let (thing, kmap) = case editing of
             NotEditing ->
                 ( label (leItem (head is))
@@ -94,7 +88,7 @@ handler ::
     -- For some reason, [TopApp AppEventResponse] results in "The type synonym
     -- AppEventResponse should have 2 arguments, but has been given none".
     [AppEventResponse Model Event]
-handler wenv node model = \case
+handler wenv _node model = \case
     Nop -> []
     UpdateItem t -> updateItem t model
     HandleUser x
@@ -120,6 +114,7 @@ handler wenv node model = \case
                   setFocusOnKey wenv "edit-box"
                 ]
 
+updateItem :: Applicative f => Text -> Model -> f (AppEventResponse Model Event)
 updateItem t (Model is s) =
     let ItemDb id_ _ = head is
      in pure $ Monomer.Model $ Model (ItemDb id_ (Item t) : tail is) s

@@ -17,6 +17,7 @@ newtype Item = Item {unItem :: Text}
 data ItemDb = ItemDb {itemDbId :: Int, itemDbItem :: Item}
     deriving (Show, Eq)
 
+leItem :: ItemDb -> Text
 leItem = unItem . itemDbItem
 
 instance FromRow ItemDb where

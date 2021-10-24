@@ -6,13 +6,8 @@ module Orgr where
 
 import Prelude hiding (getLine, putStr, putStrLn, unlines)
 
-import Control.Exception.Safe
-import Control.Monad (forever)
-import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text (Text)
-import Data.Text.IO (getLine, putStr, putStrLn)
 import Database.SQLite.Simple
-import GHC.Stack
 import Monomer
 
 import qualified Orgr.ProcessIn as ProcessIn
@@ -84,6 +79,7 @@ that case, the original idea can be discarded or attached as a note.
 
 -}
 
+main :: IO ()
 main = do
     -- Set up a db
     conn <- open "test.db"
