@@ -61,19 +61,21 @@ data Event = Nop | UpdateItem Text | HandleUser UserAction
 
 buildUI :: WidgetEnv Model Event -> Model -> WidgetNode Model Event
 buildUI _ _model@(Model is editing) =
-    let (thing, kmap) = case editing of
-            NotEditing ->
-                ( label (leItem (head is))
-                , viewKeymap
-                )
-            Editing ->
-                ( textFieldV (leItem (head is)) UpdateItem `nodeKey` "edit-box"
-                , editKeymap
-                )
+    let kmap = case editing of
+            NotEditing -> viewKeymap
+            Editing -> editKeymap
+        itm = leItem (head is)
+        thing =
+            hstack
+                [ label itm
+                    `nodeVisible` (editing == NotEditing)
+                , textFieldV itm UpdateItem
+                    `nodeKey` "edit-box"
+                    `nodeVisible` (editing == Editing)
+                ]
      in keystroke_
             (fmap (fmap HandleUser) kmap)
-            -- FIXME: This doesn't do what I expect.
-            [ignoreChildrenEvts]
+            []
             $ box_ [alignCenter, alignMiddle] thing
 
 -- Whatever
@@ -110,8 +112,7 @@ handler wenv _node model = \case
             trace
                 "Edit"
                 [ Monomer.Model model{modelEditMode = Editing}
-                , -- FIXME: This doesn't do what I expect.
-                  setFocusOnKey wenv "edit-box"
+                , setFocusOnKey wenv "edit-box"
                 ]
         | KastZettel <- x -> error "Unimplemented"
 
