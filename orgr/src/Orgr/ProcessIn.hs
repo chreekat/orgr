@@ -51,7 +51,7 @@ type KeyMap = [(Text, UserAction)]
 
 viewKeymap, editKeymap :: KeyMap
 viewKeymap =
-    [("e", Edit)]
+    [("C-e", Edit)]
 editKeymap =
     [("Enter", Save)]
 
