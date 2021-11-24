@@ -51,7 +51,7 @@ type KeyMap = [(Text, UserAction)]
 
 viewKeymap, editKeymap :: KeyMap
 viewKeymap =
-    [("C-e", Edit)]
+    [("e", Edit)]
 editKeymap =
     [("Enter", Save)]
 
@@ -75,7 +75,7 @@ buildUI _ _model@(Model is editing) =
                 ]
      in keystroke_
             (fmap (fmap HandleUser) kmap)
-            []
+            [ignoreChildrenEvts]
             $ box_ [alignCenter, alignMiddle] thing
 
 -- Whatever
@@ -90,7 +90,7 @@ handler ::
     -- For some reason, [TopApp AppEventResponse] results in "The type synonym
     -- AppEventResponse should have 2 arguments, but has been given none".
     [AppEventResponse Model Event]
-handler wenv _node model = \case
+handler _wenv _node model = \case
     Nop -> []
     UpdateItem t -> updateItem t model
     HandleUser x
@@ -112,7 +112,7 @@ handler wenv _node model = \case
             trace
                 "Edit"
                 [ Monomer.Model model{modelEditMode = Editing}
-                , setFocusOnKey wenv "edit-box"
+                , SetFocusOnKey "edit-box"
                 ]
         | KastZettel <- x -> error "Unimplemented"
 
