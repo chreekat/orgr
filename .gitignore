@@ -6,3 +6,5 @@ result
 
 .pre-commit-config.yaml
 nix/sources.nix
+.direnv
+errors.err

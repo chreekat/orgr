@@ -98,7 +98,9 @@ handler _wenv _node model = \case
             trace
                 "Save"
                 [ Monomer.Model model{modelEditMode = NotEditing}
-                , -- TODO?: This should be a Report, not a Task. Centralize persistence.
+                , {- TODO: This should be a Report, not a Task. Centralize
+                    persistence, or at least make it transactional for sqlite's
+                    sake. -}
                   let (ItemDb id_ i) = head (modelItems model)
                    in Monomer.Task $
                         Nop <$ do
