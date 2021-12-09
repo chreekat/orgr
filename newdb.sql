@@ -56,9 +56,13 @@ CREATE TABLE cmp_description(
     item_id integer references item(id),
     description string);
 CREATE TABLE cmp_title(
-    title_id integer references component_id(id),
+    title_id integer integer primary key,
     item_id integer references item(id),
     title string);
+CREATE TABLE cmp_duedate(
+    duedate_id integer integer primary key,
+    item_id integer references item(id),
+    duedate string);
 
 insert into item default values;
 insert into cmp_title (item_id, title) values (1, "I am a brief item");
@@ -71,23 +75,19 @@ values (2, "This is my long ass description");
 insert into item default values;
 insert into cmp_description (item_id, description)
 values (3, "I am a headless item");
+insert into cmp_duedate (item_id, duedate)
+values (3, "2021-12-03 10:00:00");
 
 insert into item default values;
 
 create view basic_item as
-select distinct item_id, title, description
+select item_id, title, description
 from item i
-join (
-    select item_id, title, description
-    from cmp_title
-    left join cmp_description
-    using (item_id)
-    union
-    select item_id, title, description
-    from cmp_description
-    left join cmp_title
-    using (item_id))
-using (item_id);
+left join cmp_title using (item_id)
+left join cmp_description using (item_id)
+where
+title is not null or
+description is not null
+;
 
 select * from basic_item;
-
